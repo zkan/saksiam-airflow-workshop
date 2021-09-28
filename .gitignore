@@ -130,3 +130,6 @@ dmypy.json
 
 # Airflow
 logs
+
+# Vim
+*.swp
