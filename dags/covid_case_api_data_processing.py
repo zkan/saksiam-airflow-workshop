@@ -15,7 +15,7 @@ DAG_FOLDER = "/opt/airflow/dags"
 
 
 # def _get_data(**kwargs) -> str:
-def _get_data(ds) -> str:    
+def _get_data(ds, ti) -> str:
     # logging.info(kwargs)
     # ds = kwargs["ds"]
     logging.info(ds)
@@ -36,7 +36,7 @@ def _get_data(ds) -> str:
     filename = f"{DAG_FOLDER}/{ds}-covid-cases.csv"
     with open(filename, "w") as csvfile:
         fieldnames = [
-            "txn_date", 
+            "txn_date",
             "new_case",
             "total_case",
             "new_case_excludeabroad",
@@ -52,12 +52,19 @@ def _get_data(ds) -> str:
         # writer.writeheader()
         writer.writerow(latest_record)
 
+    ti.xcom_push(key="name", value="Kan Ouivirach")
+
     return filename
 
 
-def _upload_to_data_lake(ds):
+def _upload_to_data_lake(ds, ti):
     # ds = "2021-09-29"
-    filename = f"{DAG_FOLDER}/{ds}-covid-cases.csv"
+
+    my_name = ti.xcom_pull(task_ids="get_data", key="name")
+    logging.info(f"My name is {my_name}")
+
+    # filename = f"{DAG_FOLDER}/{ds}-covid-cases.csv"
+    filename = ti.xcom_pull(task_ids="get_data", key="return_value")
 
     hook = S3Hook(aws_conn_id="s3_conn")
     hook.load_file(
@@ -66,7 +73,6 @@ def _upload_to_data_lake(ds):
         bucket_name="landing",
         replace=True,
     )
-
 
 
 default_args = {
